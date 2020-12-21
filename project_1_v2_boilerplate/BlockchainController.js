@@ -91,7 +91,7 @@ class BlockchainController {
 
   // This endpoint allows you to retrieve the block by hash (GET endpoint)
   getBlockByHash() {
-    this.app.get("/block/:hash", async (req, res) => {
+    this.app.get("/blockByHash/:hash", async (req, res) => {
       if (req.params.hash) {
         const hash = req.params.hash;
         let block = await this.blockchain.getBlockByHash(hash);
@@ -133,7 +133,7 @@ class BlockchainController {
       try {
         let errors = await this.blockchain.validateChain();
         if (errors) {
-          return res.status(200).json(stars);
+          return res.status(200).json(errors);
         } else {
           return res.status(404).send("Block Not Found!");
         }
