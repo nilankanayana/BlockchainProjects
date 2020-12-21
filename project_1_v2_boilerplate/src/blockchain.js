@@ -38,7 +38,6 @@ class Blockchain {
     if (this.height === -1) {
       let block = new BlockClass.Block({ data: "Genesis Block" });
       await this._addBlock(block);
-      this.validateChain();
     }
   }
 
@@ -88,6 +87,8 @@ class Blockchain {
         ++self.height;
 
         resolve(block);
+
+        await self.validateChain();
       } catch (err) {
         reject(err);
       }
@@ -144,7 +145,6 @@ class Blockchain {
         if (bitcoinMessage.verify(message, address, signature)) {
           let block = new BlockClass.Block({ star: star, address: address });
           await self._addBlock(block);
-          this.validateChain();
           resolve(block);
         } else {
           reject("Verification failed");
@@ -162,9 +162,9 @@ class Blockchain {
   getBlockByHash(hash) {
     let self = this;
     return new Promise((resolve, reject) => {
-      let result = self.chain.filter((block) => block.hash === hash)[0];
+      let result = self.chain.find((block) => block.hash === hash);
       if (result) {
-        resolve(resolve);
+        resolve(result);
       } else {
         reject("Block not found");
       }
@@ -179,7 +179,7 @@ class Blockchain {
   getBlockByHeight(height) {
     let self = this;
     return new Promise((resolve, reject) => {
-      let block = self.chain.filter((p) => p.height === height)[0];
+      let block = self.chain.find((p) => p.height === height);
       if (block) {
         resolve(block);
       } else {
@@ -201,7 +201,7 @@ class Blockchain {
       self.chain.forEach(async (block) => {
         let blockData = await block.getBData();
         if (blockData && blockData.address && blockData.address === address) {
-          stars.push(blockData.star);
+          stars.push(blockData);
         }
       });
 
@@ -219,8 +219,9 @@ class Blockchain {
     let self = this;
     let errorLog = [];
     return new Promise((resolve, reject) => {
-      self.chain.forEach(async (index, block) => {
-        if (!(await block.validate())) {
+      self.chain.forEach(async (block, index) => {
+        let valid = await block.validate();
+        if (!valid) {
           errorLog.push("Block tampered:" + block.height);
         }
         if (index > 0) {

@@ -17,7 +17,7 @@ class Block {
   constructor(data) {
     this.hash = null; // Hash of the block
     this.height = 0; // Block Height (consecutive number of each block)
-    this.body = Buffer(JSON.stringify(data)).toString("hex"); // Will contain the transactions stored in the block, by default it will encode the data
+    this.body = Buffer.from(JSON.stringify(data)).toString("hex"); // Will contain the transactions stored in the block, by default it will encode the data
     this.time = 0; // Timestamp for the Block creation
     this.previousBlockHash = null; // Reference to the previous Block Hash
   }
@@ -37,16 +37,22 @@ class Block {
   validate() {
     let self = this;
     return new Promise((resolve, reject) => {
-      // Save in auxiliary variable the current block hash
-      let currentHash = self.hash;
+      try {
+        // Save in auxiliary variable the current block hash
+        let currentHash = self.hash;
 
-      // Recalculate the hash of the Block
-      let hash = SHA256(JSON.stringify(self));
+        // Recalculate the hash of the Block
+        self.hash = null;
+        let newHash = SHA256(JSON.stringify(self)).toString();
+        self.hash = currentHash;
 
-      // Comparing if the hashes changed
-      // Returning the Block is not valid
-      // Returning the Block is valid
-      resolve(hash === currentHash);
+        // Comparing if the hashes changed
+        // Returning the Block is not valid
+        // Returning the Block is valid
+        resolve(newHash === currentHash);
+      } catch (err) {
+        reject(err);
+      }
     });
   }
 
@@ -64,16 +70,12 @@ class Block {
     // Decoding the data to retrieve the JSON representation of the object
     // Parse the data to an object to be retrieve.
     // Resolve with the data if the object isn't the Genesis block
-    let self = this;
-    return new Promise((resolve, reject) => {
-      if (self.height > 0) {
-        let decodedText = hex2ascii(self.body);
-        let data = JSON.parse(decodedText);
-        resolve(data);
-      } else {
-        reject("Genesis Block");
-      }
-    });
+    if (this.height > 0) {
+      let decodedText = hex2ascii(this.body);
+      let data = JSON.parse(decodedText);
+
+      return data;
+    }
   }
 }
 
